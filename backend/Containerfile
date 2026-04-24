@@ -1,0 +1,38 @@
+FROM python:3.11-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── soccercv engine (expensive layer — cached unless requirements.txt changes) ──
+COPY soccercv_engine/requirements.txt /tmp/soccercv_requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir \
+        --extra-index-url https://download.pytorch.org/whl/cpu \
+        -r /tmp/soccercv_requirements.txt
+
+COPY soccercv_engine/pyproject.toml /app/soccercv_engine/pyproject.toml
+COPY soccercv_engine/src/ /app/soccercv_engine/src/
+RUN pip install --no-cache-dir --no-deps -e /app/soccercv_engine/
+
+# ── backend API ──────────────────────────────────────────────────────────────
+COPY requirements-backend.txt .
+RUN pip install --no-cache-dir -r requirements-backend.txt
+
+COPY backend/ ./backend/
+
+# Mount-point stubs so volume mounts land cleanly
+RUN mkdir -p /app/models /data/runs
+
+EXPOSE 8001
+
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8001"]

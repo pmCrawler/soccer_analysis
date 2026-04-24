@@ -1,0 +1,58 @@
+name: soccercv
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Containerfile
+    ports:
+      - "8001:8001"
+    env_file: .env
+    environment:
+      # DB_URL overrides the individual POSTGRES_* vars from .env
+      DB_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/${POSTGRES_DB}
+      RUNS_DIR: /data/runs
+      FRONTEND_ORIGIN: http://localhost:3000
+    volumes:
+      - runs:/data/runs
+      - ./soccercv_engine/models:/app/models:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Containerfile
+    ports:
+      - "3000:3000"
+      - "8000:8000"
+    environment:
+      BACKEND_URL: http://backend:8001
+    depends_on:
+      - backend
+
+  # Future services (placeholder):
+  # redis:
+  #   image: redis:7-alpine
+  # proxy:
+  #   image: traefik:v3
+  #   ports: ["80:80", "443:443"]
+
+volumes:
+  pgdata:
+  runs:

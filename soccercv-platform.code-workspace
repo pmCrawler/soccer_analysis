@@ -1,0 +1,44 @@
+{
+  "folders": [
+    {
+      "name": "soccer_analysis (app)",
+      "path": "."
+    },
+    {
+      "name": "soccercv (engine)",
+      "path": "soccercv_engine"
+    }
+  ],
+  "settings": {
+    // Each folder picks up its own .venv automatically via the paths below.
+    // VS Code resolves these relative to each folder root.
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+
+    // soccer_analysis venv for the app/backend folders
+    "[soccer_analysis (app)]": {
+      "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
+    },
+
+    // soccercv engine has its own venv
+    "[soccercv (engine)]": {
+      "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
+    },
+
+    "files.exclude": {
+      "**/__pycache__": true,
+      "**/.web": true,
+      "**/.states": true,
+      "**/node_modules": true
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-python.python",
+      "ms-python.vscode-pylance",
+      "ms-python.black-formatter",
+      "ms-python.ruff",
+      "tamasfe.even-better-toml",
+      "42crunch.vscode-openapi"
+    ]
+  }
+}
