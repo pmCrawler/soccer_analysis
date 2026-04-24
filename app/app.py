@@ -1,26 +1,42 @@
+"""SoccerCV Reflex application — 5 routes."""
+
 import reflex as rx
-from app.states.navigation import NavigationState
-from app.components.layout import layout
-from app.components.upload_view import upload_view
-from app.components.history_view import history_view
-from app.components.dashboard_view import dashboard_view
-from app.components.report_view import report_view
 
 
-def dashboard_page():
-    return layout(dashboard_view())
-
-
-def reports_page():
-    return layout(report_view())
+def dashboard_page() -> rx.Component:
+    from app.components.shell import app_shell
+    from app.components.dashboard import dashboard_view
+    return app_shell(dashboard_view())
 
 
 def upload_page() -> rx.Component:
-    return layout(upload_view())
+    from app.components.shell import app_shell
+    from app.components.upload import upload_wizard
+    return app_shell(upload_wizard())
 
 
-def history_page() -> rx.Component:
-    return layout(history_view())
+def report_page() -> rx.Component:
+    from app.components.shell import app_shell
+    from app.components.report import report_view
+    return app_shell(report_view())
+
+
+def player_page() -> rx.Component:
+    from app.components.shell import app_shell
+    from app.components.player import player_view
+    return app_shell(player_view())
+
+
+def settings_page() -> rx.Component:
+    from app.components.shell import app_shell
+    from app.components.settings import settings_view
+    return app_shell(settings_view())
+
+
+def calibration_page() -> rx.Component:
+    from app.components.shell import app_shell
+    from app.components.calibration import calibration_view
+    return app_shell(calibration_view())
 
 
 app = rx.App(
@@ -29,12 +45,15 @@ app = rx.App(
         rx.el.link(rel="preconnect", href="https://fonts.googleapis.com"),
         rx.el.link(rel="preconnect", href="https://fonts.gstatic.com", cross_origin=""),
         rx.el.link(
-            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap",
+            href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&display=swap",
             rel="stylesheet",
         ),
     ],
 )
+
 app.add_page(dashboard_page, route="/")
 app.add_page(upload_page, route="/upload")
-app.add_page(history_page, route="/history")
-app.add_page(reports_page, route="/reports")
+app.add_page(report_page, route="/report")
+app.add_page(player_page, route="/player/[num]")
+app.add_page(settings_page, route="/settings")
+app.add_page(calibration_page, route="/calibration")
