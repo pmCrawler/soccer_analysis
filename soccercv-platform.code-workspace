@@ -10,18 +10,19 @@
     }
   ],
   "settings": {
-    // Each folder picks up its own .venv automatically via the paths below.
-    // VS Code resolves these relative to each folder root.
+    // Both folders share the single .venv in soccer_analysis/.
+    // The engine is installed as an editable package into that venv, so Pylance
+    // resolves engine imports from there — no separate engine venv needed.
     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
 
-    // soccer_analysis venv for the app/backend folders
+    // App folder: venv is at soccer_analysis/.venv
     "[soccer_analysis (app)]": {
       "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
     },
 
-    // soccercv engine has its own venv
+    // Engine folder: venv is one level up (soccer_analysis/.venv)
     "[soccercv (engine)]": {
-      "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
+      "python.defaultInterpreterPath": "${workspaceFolder}/../.venv/bin/python"
     },
 
     "files.exclude": {
@@ -35,6 +36,7 @@
     "recommendations": [
       "ms-python.python",
       "ms-python.vscode-pylance",
+      "ms-python.debugpy",
       "ms-python.black-formatter",
       "ms-python.ruff",
       "tamasfe.even-better-toml",

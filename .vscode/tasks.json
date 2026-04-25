@@ -1,0 +1,110 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+
+    // ── Database ─────────────────────────────────────────────────────────────
+
+    {
+      "label": "DB: Start container",
+      "type": "shell",
+      "command": "podman compose up db -d",
+      "group": "none",
+      "presentation": { "reveal": "silent", "panel": "shared" }
+    },
+    {
+      "label": "DB: Stop container",
+      "type": "shell",
+      "command": "podman compose down",
+      "group": "none",
+      "presentation": { "reveal": "silent", "panel": "shared" }
+    },
+    {
+      "label": "DB: Apply migrations",
+      "type": "shell",
+      "command": "alembic upgrade head",
+      "group": "none",
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+
+    // ── Run without debug ────────────────────────────────────────────────────
+
+    {
+      "label": "Run: Backend (no debug, hot-reload)",
+      "type": "shell",
+      "command": "uvicorn backend.main:app --reload --port 8001",
+      "group": "none",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "run" }
+    },
+    {
+      "label": "Run: Frontend (no debug)",
+      "type": "shell",
+      "command": "reflex run",
+      "group": "none",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "run" }
+    },
+
+    // ── Run with debugpy (manual attach) ─────────────────────────────────────
+    // After running these, attach using the "Attach" launch configs.
+
+    {
+      "label": "Debug: Start backend with debugpy (port 5678)",
+      "type": "shell",
+      "command": "python -m debugpy --listen 5678 -m uvicorn backend.main:app --host 0.0.0.0 --port 8001",
+      "group": "none",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "debug" }
+    },
+    {
+      "label": "Debug: Start backend with debugpy + wait (port 5678)",
+      "type": "shell",
+      "command": "python -m debugpy --listen 5678 --wait-for-client -m uvicorn backend.main:app --host 0.0.0.0 --port 8001",
+      "group": "none",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "debug" }
+    },
+    {
+      "label": "Debug: Start frontend with debugpy (port 5679)",
+      "type": "shell",
+      "command": "python -m debugpy --listen 5679 -m reflex run",
+      "group": "none",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "debug" }
+    },
+
+    // ── Containers ───────────────────────────────────────────────────────────
+
+    {
+      "label": "Containers: Start all (no debug)",
+      "type": "shell",
+      "command": "podman compose up --build",
+      "group": "none",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "Containers: Start all (debug mode)",
+      "type": "shell",
+      "command": "podman compose -f compose.yml -f compose.debug.yml up --build",
+      "group": "none",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "Containers: Stop all",
+      "type": "shell",
+      "command": "podman compose down",
+      "group": "none",
+      "presentation": { "reveal": "silent", "panel": "shared" }
+    }
+
+  ]
+}

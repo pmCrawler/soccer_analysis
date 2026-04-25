@@ -1,0 +1,26 @@
+# Debug overlay — use with the base compose.yml:
+#   podman compose -f compose.yml -f compose.debug.yml up
+#
+# Overrides backend and frontend to start under debugpy.
+# Both processes pause until a debugger attaches (--wait-for-client).
+# Attach using the "Container Backend/Frontend: Attach" configs in launch.json.
+#
+# pathMappings in launch.json: localRoot=${workspaceFolder}, remoteRoot=/app
+
+services:
+  backend:
+    command: >
+      python -m debugpy --listen 0.0.0.0:5678 --wait-for-client
+      -m uvicorn backend.main:app --host 0.0.0.0 --port 8001
+    ports:
+      - "5678:5678"    # debugpy
+      - "8001:8001"    # API (already in base, listed here for clarity)
+
+  frontend:
+    command: >
+      python -m debugpy --listen 0.0.0.0:5679 --wait-for-client
+      -m reflex run
+    ports:
+      - "5679:5679"    # debugpy
+      - "3000:3000"
+      - "8000:8000"

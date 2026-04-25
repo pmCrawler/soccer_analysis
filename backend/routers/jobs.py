@@ -297,10 +297,7 @@ async def generate_report(
             args += ["--score-a", str(body.score_a)]
         if body.score_b is not None:
             args += ["--score-b", str(body.score_b)]
-        if body.use_ai:
-            args.append("--ai")
-        if body.coach_notes:
-            args += ["--notes", body.coach_notes]
+        # AI is handled in-process via pydantic-ai — do not pass --ai to CLI
 
         rc = await _run_pipeline_step(
             job_id, db,
@@ -309,7 +306,22 @@ async def generate_report(
             cwd=job.run_dir,
         )
         if rc == 0:
-            await _ingest_tactical_report(job_id, db, Path(job.run_dir))
+            agg = await _ingest_tactical_report(job_id, db, Path(job.run_dir))
+            if body.use_ai and agg is not None:
+                try:
+                    from ..services.ai_analysis import generate_tactical_brief
+                    brief = await generate_tactical_brief(
+                        agg=agg,
+                        team_a=body.team_a_name,
+                        team_b=body.team_b_name,
+                        score_a=body.score_a,
+                        score_b=body.score_b,
+                        coach_notes=body.coach_notes,
+                    )
+                    await queries.upsert_ai_report(db, job_id, brief.model_dump())
+                except Exception as exc:
+                    queue = _get_or_create_queue(job_id)
+                    await queue.put({"type": "error", "message": f"AI report failed: {exc}"})
             await queries.set_job_status(db, job_id, "ready", stage="", progress=1.0)
             queue = _get_or_create_queue(job_id)
             await queue.put({"type": "done", "status": "ready"})
@@ -322,38 +334,30 @@ async def generate_report(
     return {"queued": True}
 
 
-async def _ingest_tactical_report(job_id: str, db: AsyncSession, run_dir: Path) -> None:
+async def _ingest_tactical_report(
+    job_id: str, db: AsyncSession, run_dir: Path
+) -> dict | None:
+    """
+    Read per-frame tactical_report.json, aggregate into summary stats, and
+    upsert TacticalSummary in the DB.  Returns the aggregate dict (including
+    the _ai extras needed for AI prompt building) or None on failure.
+    """
     report_path = run_dir / "tactical_report.json"
     if not report_path.exists():
-        return
+        return None
     try:
-        data = json.loads(report_path.read_text())
+        frames = json.loads(report_path.read_text())
+        if not isinstance(frames, list):
+            return None
     except Exception:
-        return
-    await queries.upsert_tactical_summary(db, job_id, **{
-        "possession_a": data.get("possession_a", 50),
-        "possession_b": data.get("possession_b", 50),
-        "formation_a": data.get("formation_a", "4-3-3"),
-        "formation_b": data.get("formation_b", "4-4-2"),
-        "stability_a": data.get("stability_a", 0),
-        "stability_b": data.get("stability_b", 0),
-        "ppda_a": data.get("ppda_a"),
-        "ppda_b": data.get("ppda_b"),
-        "momentum_data": data.get("momentum_data", []),
-        "key_moments": data.get("key_moments", []),
-        "zone_pct": data.get("zone_pct", {}),
-        "ball_tracking": data.get("ball_tracking", {}),
-        "avg_positions_a": data.get("avg_positions_a", []),
-        "avg_positions_b": data.get("avg_positions_b", []),
-        "pass_edges": data.get("pass_edges", []),
-        "press_points": data.get("press_points", []),
-        "shot_data": data.get("shot_data", []),
-    })
-    players = data.get("players", [])
-    if players:
-        await queries.delete_player_stats(db, job_id)
-        records = [{"job_id": job_id, **p} for p in players]
-        await queries.bulk_insert_player_stats(db, records)
+        return None
+
+    from ..services.ai_analysis import aggregate_frames
+
+    agg = aggregate_frames(frames)
+    db_fields = {k: v for k, v in agg.items() if k != "_ai"}
+    await queries.upsert_tactical_summary(db, job_id, **db_fields)
+    return agg
 
 
 # ── SSE stream ────────────────────────────────────────────────────────

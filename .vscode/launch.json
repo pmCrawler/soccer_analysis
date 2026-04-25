@@ -1,0 +1,130 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+
+    // ── Local: Launch (VS Code starts the process) ──────────────────────────
+
+    {
+      "name": "Backend: Launch (debug)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["backend.main:app", "--host", "0.0.0.0", "--port", "8001"],
+      // --reload is intentionally omitted: uvicorn hot-reload forks a child
+      // process that debugpy cannot follow. Save → restart the debug session
+      // to pick up code changes.
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "justMyCode": false,
+      "console": "integratedTerminal"
+    },
+
+    {
+      "name": "Frontend: Launch (debug)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "reflex",
+      "args": ["run"],
+      // Breakpoints land in Python state/event handlers (port 8000).
+      // The React UI on port 3000 is JS — debug that with browser DevTools.
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "justMyCode": false,
+      "console": "integratedTerminal"
+    },
+
+    // ── Local: Attach (process already running with debugpy) ────────────────
+    // Start with: python -m debugpy --listen 5678 -m uvicorn backend.main:app --host 0.0.0.0 --port 8001
+    {
+      "name": "Backend: Attach",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "localhost",
+        "port": 5678
+      },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}",
+          "remoteRoot": "${workspaceFolder}"
+        }
+      ],
+      "justMyCode": false
+    },
+
+    // Start with: python -m debugpy --listen 5679 -m reflex run
+    {
+      "name": "Frontend: Attach",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "localhost",
+        "port": 5679
+      },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}",
+          "remoteRoot": "${workspaceFolder}"
+        }
+      ],
+      "justMyCode": false
+    },
+
+    // ── Containers: Attach (process running inside podman container) ─────────
+    // Start with: podman compose -f compose.yml -f compose.debug.yml up
+    {
+      "name": "Container Backend: Attach",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "localhost",
+        "port": 5678
+      },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}",
+          "remoteRoot": "/app"
+        }
+      ],
+      "justMyCode": false
+    },
+
+    {
+      "name": "Container Frontend: Attach",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "localhost",
+        "port": 5679
+      },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}",
+          "remoteRoot": "/app"
+        }
+      ],
+      "justMyCode": false
+    }
+
+  ],
+
+  "compounds": [
+    {
+      "name": "Debug: Backend + Frontend",
+      "configurations": ["Backend: Launch (debug)", "Frontend: Launch (debug)"],
+      "stopAll": true
+    },
+    {
+      "name": "Debug: Attach both (local)",
+      "configurations": ["Backend: Attach", "Frontend: Attach"],
+      "stopAll": true
+    },
+    {
+      "name": "Debug: Attach both (containers)",
+      "configurations": ["Container Backend: Attach", "Container Frontend: Attach"],
+      "stopAll": true
+    }
+  ]
+}
